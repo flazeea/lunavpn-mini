@@ -15,6 +15,7 @@ onMounted(async () => {
     // 1. Получаем свежие данные
     let initData = WebApp.initData
     
+    console.log("SENDING DATA:", initData)
     // 2. Логика: 
     // Если данные есть в SDK (мы зашли из ТГ) -> используем их и ОБНОВЛЯЕМ storage
     if (initData) {
@@ -34,7 +35,7 @@ onMounted(async () => {
     // 3. Отправляем на сервер
     const response = await $fetch('/api/auth', {
       method: 'POST',
-      body: { initData }
+      body: { initData:initData }
     })
     
     // Если успех
