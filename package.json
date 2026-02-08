@@ -1,0 +1,22 @@
+{
+  "name": "lunavpn-mini",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "nuxt build",
+    "dev": "nuxt dev",
+    "generate": "nuxt generate",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "@tailwindcss/vite": "^4.1.18",
+    "crypto": "^1.0.1",
+    "dotenv": "^17.2.4",
+    "nuxt": "^4.3.0",
+    "process": "^0.11.10",
+    "tailwindcss": "^4.1.18",
+    "vue": "^3.5.27",
+    "vue-router": "^4.6.4"
+  }
+}
