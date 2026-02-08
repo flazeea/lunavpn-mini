@@ -1,4 +1,3 @@
-// server/utils/telegram.ts
 import crypto from 'node:crypto'
 
 interface ValidationResult {
@@ -8,55 +7,75 @@ interface ValidationResult {
 }
 
 export function validateTelegramData(initData: string, botToken: string): ValidationResult {
-    // 1. Если строка пустая — сразу отказ
+    // Логируем, что пришло (потом уберете в продакшене)
+    console.log('--- [Auth Debug] ---')
+
     if (!initData) {
+        console.log('Error: initData is empty')
         return { isValid: false, error: 'No data provided' }
     }
 
     const urlParams = new URLSearchParams(initData)
     const hash = urlParams.get('hash')
 
-    // 2. Если нет хеша — это не данные телеграма
+    // Получаем дату авторизации
+    const authDateStr = urlParams.get('auth_date')
+
     if (!hash) {
+        console.log('Error: No hash found in initData')
         return { isValid: false, error: 'No hash found' }
     }
 
-    // 3. Убираем хеш из параметров для проверки
+    if (!authDateStr) {
+        console.log('Error: No auth_date found in initData')
+        return { isValid: false, error: 'No auth_date found' }
+    }
+
+    // 1. Проверка времени (Самое важное место)
+    const authDate = Number(authDateStr)
+    const now = Math.floor(Date.now() / 1000) // Текущее время в секундах
+    const diff = now - authDate
+
+    console.log(`Time check: Now=${now}, AuthDate=${authDate}, Diff=${diff}s`)
+
+    // Если данные старше 24 часов (86400 сек)
+    if (diff > 86400) {
+        console.log('Error: Data expired')
+        return { isValid: false, error: 'Data is expired (older than 24h)' }
+    }
+
+    // Защита от "времени из будущего" (если часы сервера отстают)
+    // Разрешаем расхождение в 5 минут (300 сек)
+    if (diff < -300) {
+        console.log('Error: Data from future (clock skew)')
+        return { isValid: false, error: 'Data is from the future' }
+    }
+
+    // 2. Проверка подписи (Hash)
     urlParams.delete('hash')
 
-    // 4. Сортировка параметров (обязательно алфавитный порядок ключей)
     const dataToCheck = Array.from(urlParams.entries())
         .sort(([a], [b]) => a.localeCompare(b))
         .map(([key, value]) => `${key}=${value}`)
         .join('\n')
 
-    // 5. Создаем секретный ключ
     const secretKey = crypto
         .createHmac('sha256', 'WebAppData')
         .update(botToken)
         .digest()
 
-    // 6. Считаем хеш
     const calculatedHash = crypto
         .createHmac('sha256', secretKey)
         .update(dataToCheck)
         .digest('hex')
 
-    // 7. Проверяем срок действия (auth_date) - защита от Replay атак
-    // Данные валидны только 24 часа (86400 секунд)
-    const authDate = Number(urlParams.get('auth_date'))
-    const now = Math.floor(Date.now() / 1000)
-
-    if (now - authDate > 86400) {
-        return { isValid: false, error: 'Data is expired' }
-    }
-
     if (calculatedHash === hash) {
-        // Парсим user JSON обратно в объект
+        console.log('Success: Signature matches')
         const userStr = urlParams.get('user')
         const user = userStr ? JSON.parse(userStr) : null
         return { isValid: true, data: user }
     } else {
+        console.log(`Error: Hash mismatch. \nClient: ${hash} \nServer: ${calculatedHash}`)
         return { isValid: false, error: 'Signature mismatch' }
     }
 }
