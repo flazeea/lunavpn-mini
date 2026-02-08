@@ -13,7 +13,7 @@ onMounted(async () => {
     WebApp.ready()
 
     // 1. Получаем свежие данные
-    let initData = WebApp.initData
+    let initData = 'query_id=AAGAD2ELAwAAAIAPYQtnuKPj&user=%7B%22id%22%3A6633361280%2C%22first_name%22%3A%22flazee%21%22%2C%22last_name%22%3A%22%22%2C%22username%22%3A%22fl4zee%22%2C%22language_code%22%3A%22ru%22%2C%22is_premium%22%3Atrue%2C%22added_to_attachment_menu%22%3Atrue%2C%22allows_write_to_pm%22%3Atrue%2C%22photo_url%22%3A%22https%3A%5C%2F%5C%2Ft.me%5C%2Fi%5C%2Fuserpic%5C%2F320%5C%2Fyk6BZ0nIUvh22aBZJ3PtpgSuBB5wBBGTzrAjuKZ6c98pHaAYipwjaBwsFiVDQSLY.svg%22%7D&auth_date=1770551340&signature=PKTbdI1bJ1HqdOTAvkERXrUEGJ1fTtz1jvevEHizXJHoDfHWHyd3UVsAVklVYIRdDt8dMjwVUpCxpczL1kciDw&hash=ddee3a63df109a481ec953c57f5fff44402735e69a4a7b6e4653680b3a30c856'
     
     console.log("SENDING DATA:", initData)
     // 2. Логика: 
