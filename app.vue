@@ -1,65 +1,74 @@
 <template>
-  <div class="page">
-    <h1>Nuxt Mini App</h1>
+  <div class="container">
+    <div v-if="loading">Загрузка...</div>
     
-    <div v-if="!authResult">
-      <p>Загрузка...</p>
+    <div v-else-if="error" class="error">
+      Ошибка: {{ error }}
     </div>
 
-    <div v-else class="result">
-      <p>Статус: {{ authResult.success ? '✅ Авторизован' : '❌ Ошибка' }}</p>
-      <pre>{{ authResult.message }}</pre>
-      <p v-if="authResult.user">Твой ID: {{ authResult.user.id }}</p>
+    <div v-else class="content">
+      <h1>Привет, {{ user?.first_name }}!</h1>
+      <p>Твой ID: {{ user?.id }}</p>
+      <button @click="handleBtn">Тест кнопки</button>
     </div>
-    
-    <button @click="handleAction">Сделать действие</button>
   </div>
 </template>
 
-<script setup>
-// Лучше использовать скрипт в head, но можно и npm пакет @twa-dev/sdk
-useHead({
-  script: [{ src: 'https://telegram.org/js/telegram-web-app.js', defer: true }]
-})
+<script setup lang="ts">
+import { ref, onMounted } from 'vue'
+// Импортируем SDK напрямую. Благодаря ssr: false в конфиге, 
+// это не вызовет ошибку "window is not defined" при старте.
+import WebApp from '@twa-dev/sdk'
 
-const authResult = ref(null)
+const user = ref<any>(null)
+const error = ref<string | null>(null)
+const loading = ref(true)
 
 onMounted(async () => {
-  // Ждем загрузки скрипта TWA
-  if (window.Telegram?.WebApp) {
-    const tg = window.Telegram.WebApp
-    tg.ready()
-    tg.expand()
+  try {
+    // 1. Инициализация
+    WebApp.ready()
+    WebApp.expand() // Раскрыть на весь экран
+
+    // 2. Получаем "сырые" данные
+    const initData = WebApp.initData
     
-    // Получаем "сырую" строку данных для валидации
-    const initData = tg.initData
-    
+    // Если приложение открыто просто в браузере (не в ТГ), initData будет пустой
     if (!initData) {
-      authResult.value = { success: false, message: "Запущено не в Telegram" }
+      error.value = "Приложение запущено не в Telegram!"
+      loading.value = false
       return
     }
 
-    // Отправляем на наш сервер Nuxt
-    try {
-      const response = await $fetch('/api/auth', {
-        method: 'POST',
-        body: { initData }
-      })
-      authResult.value = response
-    } catch (e) {
-      authResult.value = { success: false, message: "Ошибка валидации на сервере" }
+    // 3. Отправляем на бэкенд для проверки
+    // Используем $fetch, так как это Nuxt
+    const response = await $fetch('/api/auth', {
+      method: 'POST',
+      body: { initData } // Отправляем строку целиком
+    })
+    
+    if (response.success) {
+      user.value = response.user
     }
+  } catch (e: any) {
+    console.error(e)
+    error.value = e.data?.statusMessage || "Ошибка валидации"
+  } finally {
+    loading.value = false
   }
 })
 
-const handleAction = () => {
-  window.Telegram.WebApp.showAlert('Кнопка работает!')
+const handleBtn = () => {
+  WebApp.showAlert('Всё работает!')
 }
 </script>
 
 <style>
+/* Стили для темной темы по умолчанию */
 body {
-    background-color: var(--tg-theme-bg-color);
-    color: var(--tg-theme-text-color);
+  background-color: var(--tg-theme-bg-color, #212121);
+  color: var(--tg-theme-text-color, #ffffff);
+  font-family: sans-serif; 
 }
+.error { color: #ff5555; }
 </style>
